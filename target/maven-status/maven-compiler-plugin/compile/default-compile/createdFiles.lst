@@ -1,4 +1,5 @@
 it/cnr/isti/pad/KNNMapRed.class
-it/cnr/isti/pad/Main.class
+it/cnr/isti/pad/KNN.class
 it/cnr/isti/pad/KNNMapRed$NewMapper.class
+it/cnr/isti/pad/Digit.class
 it/cnr/isti/pad/KNNMapRed$NewReducer.class

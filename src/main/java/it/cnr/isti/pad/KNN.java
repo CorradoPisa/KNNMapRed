@@ -5,7 +5,7 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Main {
+public class KNN {
     public static void main(String[] args) throws IOException {
         ArrayList<Pair<ArrayList<Double>, Integer>> train = loadData(new String[]{"datasets/trainD.csv"}, false);
         ArrayList<Pair<ArrayList<Double>, Integer>> test = loadData(new String[]{"datasets/testD.csv"}, true);
@@ -37,9 +37,9 @@ public class Main {
         return Math.sqrt(sum);
     }
 
-    public static Integer vote(ArrayList<Integer> neighbors){
-        HashMap<Integer,Integer> classVotes = new HashMap<>();
-        for (Integer neighbor:neighbors) {
+    public static Integer vote(Collection<Integer> neighbors) {
+        HashMap<Integer, Integer> classVotes = new HashMap<>();
+        for (Integer neighbor : neighbors) {
             Integer count = classVotes.containsKey(neighbor) ? classVotes.get(neighbor) + 1 : 1;
             classVotes.put(neighbor, count);
         }
