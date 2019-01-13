@@ -12,7 +12,6 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 public class KNNMapRed {
     private static Configuration conf = new Configuration();
-    private static ArrayList<Pair<ArrayList<Double>, Integer>> trainingSet = loadData(new String[]{"trainD.csv"}, conf);
 
     public static class NewMapper extends Mapper<Object, Text, IntWritable, Digit> {
         private IntWritable testInstanceID = new IntWritable();
@@ -29,39 +28,56 @@ public class KNNMapRed {
             testInstanceID.set(row.remove(0).intValue());
             // Actual value is last number in the row
             digit.setActualValue(row.remove(row.size() - 1).intValue());
+            digit.setTestData(row);
 
-            for (Pair<ArrayList<Double>, Integer> trainInstance : trainingSet) {
-                digit.setDistance(KNN.calculateDistance(row, trainInstance.getKey()));
-                digit.setPrediction(trainInstance.getValue());
-
-                context.write(testInstanceID, digit);
-            }
+            context.write(testInstanceID, digit);
         }
     }
 
     public static class NewReducer extends Reducer<IntWritable, Digit, IntWritable, IntWritable> {
-        private int K = 3;
+        private static ArrayList<Pair<ArrayList<Double>, Integer>> trainingSet = loadData(new String[]{"trainD.csv"}, conf);
+        private int K = 33;
         // one indicates that prediction was correct
         private final static IntWritable one = new IntWritable(1);
         // zero indicates that prediction was incorrect
         private final static IntWritable zero = new IntWritable(0);
+        private final static IntWritable kOut = new IntWritable();
 
-        public void reduce(IntWritable key, Iterable<Digit> values, Context context) throws IOException, InterruptedException {
+                @Override
+        protected void reduce(IntWritable key, Iterable<Digit> values, Context context) throws IOException, InterruptedException {
             int actualValue = -1;
-            SortedMap<Double, Integer> top = new TreeMap<>(Comparator.reverseOrder());
+            ArrayList<Digit> digits = new ArrayList<>();
+            Digit testDigit = values.iterator().next();
 
-            for (Digit digit : values) {
+            for (Pair<ArrayList<Double>, Integer> trainInstance : trainingSet) {
+                Digit digit = new Digit();
+                digit.setDistance(KNN.calculateDistance(testDigit.getTestData(), trainInstance.getKey()));
+                digit.setPrediction(trainInstance.getValue());
+                digit.setActualValue(testDigit.getActualValue());
+                digits.add(digit);
+            }
+
+            // Find 33 closest neighbours
+            SortedMap<Double, Integer> top = new TreeMap<>(Comparator.reverseOrder());
+            for (Digit digit : digits) {
                 actualValue = digit.getActualValue();
                 top.put(digit.getDistance(), digit.getPrediction());
                 if (top.size() > K) {
                     top.remove(top.firstKey());
                 }
             }
+
+            // for (int k = K; k>=1; k-=2){
+            // kOut.set(K);
             if (actualValue == KNN.vote(top.values())) {
                 context.write(key, one);
             } else {
                 context.write(key, zero);
             }
+            // if(k > 2){
+            //     top.remove(top.firstKey());
+            //     top.remove(top.firstKey());
+            // }
         }
     }
 
@@ -97,6 +113,7 @@ public class KNNMapRed {
         job.setOutputValueClass(Digit.class);
         job.setMapperClass(NewMapper.class);
         job.setReducerClass(NewReducer.class);
+        job.setNumReduceTasks(2);
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
