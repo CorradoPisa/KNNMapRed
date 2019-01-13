@@ -65,3 +65,4 @@ public class KNN {
         bufferedReader.close();
         return digits;
     }
+}
