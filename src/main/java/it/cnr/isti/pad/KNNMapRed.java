@@ -1,8 +1,8 @@
 package it.cnr.isti.pad;
 
 import java.io.IOException;
-import javafx.util.Pair;
 import java.util.*;
+import com.sun.tools.javac.util.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
@@ -36,14 +36,12 @@ public class KNNMapRed {
 
     public static class NewReducer extends Reducer<IntWritable, Digit, IntWritable, IntWritable> {
         private static ArrayList<Pair<ArrayList<Double>, Integer>> trainingSet = loadData(new String[]{"trainD.csv"}, conf);
-        private int K = 33;
+        private int K = 3;
         // one indicates that prediction was correct
         private final static IntWritable one = new IntWritable(1);
         // zero indicates that prediction was incorrect
         private final static IntWritable zero = new IntWritable(0);
-        private final static IntWritable kOut = new IntWritable();
-
-                @Override
+        
         protected void reduce(IntWritable key, Iterable<Digit> values, Context context) throws IOException, InterruptedException {
             int actualValue = -1;
             ArrayList<Digit> digits = new ArrayList<>();
@@ -51,13 +49,12 @@ public class KNNMapRed {
 
             for (Pair<ArrayList<Double>, Integer> trainInstance : trainingSet) {
                 Digit digit = new Digit();
-                digit.setDistance(KNN.calculateDistance(testDigit.getTestData(), trainInstance.getKey()));
-                digit.setPrediction(trainInstance.getValue());
+                digit.setDistance(KNN.calculateDistance(testDigit.getTestData(), trainInstance.fst));
+                digit.setPrediction(trainInstance.snd);
                 digit.setActualValue(testDigit.getActualValue());
                 digits.add(digit);
             }
 
-            // Find 33 closest neighbours
             SortedMap<Double, Integer> top = new TreeMap<>(Comparator.reverseOrder());
             for (Digit digit : digits) {
                 actualValue = digit.getActualValue();
@@ -67,17 +64,11 @@ public class KNNMapRed {
                 }
             }
 
-            // for (int k = K; k>=1; k-=2){
-            // kOut.set(K);
             if (actualValue == KNN.vote(top.values())) {
                 context.write(key, one);
             } else {
                 context.write(key, zero);
-            }
-            // if(k > 2){
-            //     top.remove(top.firstKey());
-            //     top.remove(top.firstKey());
-            // }
+            } 
         }
     }
 

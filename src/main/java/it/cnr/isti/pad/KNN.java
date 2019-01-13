@@ -1,20 +1,20 @@
 package it.cnr.isti.pad;
 
-import javafx.util.Pair;
+import com.sun.tools.javac.util.Pair;
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class KNN {
     public static void main(String[] args) throws IOException {
-        ArrayList<Pair<ArrayList<Double>, Integer>> train = loadData(new String[]{"datasets/trainD.csv"}, false);
-        ArrayList<Pair<ArrayList<Double>, Integer>> test = loadData(new String[]{"datasets/testD.csv"}, true);
+        ArrayList<Pair<ArrayList<Double>, Integer>> train = loadData(new String[]{"src/main/java/trainD.csv"}, false);
+        ArrayList<Pair<ArrayList<Double>, Integer>> test = loadData(new String[]{"src/main/java/testD.csv"}, true);
         Integer correct = 0;
 
         for(Pair<ArrayList<Double>, Integer> testInstance:test){
             ArrayList<Integer> neighbors = neighbors(train,testInstance);
             Integer prediction = vote(neighbors);
-            if(prediction == testInstance.getValue()) correct++;
+            if(prediction == testInstance.snd) correct++;
         }
         System.out.println("Accuracy: " + (double)correct/test.size());
     }
@@ -23,10 +23,10 @@ public class KNN {
                                                Pair<ArrayList<Double>, Integer> testInstance){
         ArrayList<Pair<Integer,Double>> distances = new ArrayList<>();
         for(Pair<ArrayList<Double>, Integer> trainInstance:trainingSet){
-            distances.add(new Pair<>(trainInstance.getValue(), calculateDistance(testInstance.getKey(), trainInstance.getKey())));
+            distances.add(new Pair<>(trainInstance.snd, calculateDistance(testInstance.fst, trainInstance.fst)));
         }
-        return distances.stream().sorted(Comparator.comparingDouble(o -> o.getValue()))
-                .limit(3).map(x->x.getKey()).collect(Collectors.toCollection(ArrayList::new));
+        return distances.stream().sorted(Comparator.comparingDouble(o -> o.snd))
+                .limit(3).map(x->x.fst).collect(Collectors.toCollection(ArrayList::new));
     }
 
     public static double calculateDistance(ArrayList<Double> x, ArrayList<Double> x2) {
@@ -65,4 +65,3 @@ public class KNN {
         bufferedReader.close();
         return digits;
     }
-}
